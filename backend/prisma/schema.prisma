@@ -37,5 +37,6 @@ model WaitingRoomConfig {
   message     String   @default("Thanks for your patience. We are experiencing high traffic.")
   bgColor     String   @default("#ffffff")
   textColor   String   @default("#000000")
+  layout      Json?
   createdAt   DateTime @default(now())
 }
