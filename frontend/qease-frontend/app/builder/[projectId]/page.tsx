@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { MousePointer, Type, Square, LayoutTemplate, Save, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import api from '@/src/utils/api';
 
 interface ComponentData {
   id: string;
@@ -29,21 +30,23 @@ export default function UIBuilder() {
 
   useEffect(() => {
     // Fetch existing config
-    fetch(`http://localhost:3001/api/projects/${projectId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.config) {
-            setConfig({
-                bgColor: data.config.bgColor,
-                textColor: data.config.textColor,
-                title: data.config.title,
-                message: data.config.message
-            });
-            if (data.config.layout && Array.isArray(data.config.layout)) {
-                setComponents(data.config.layout);
-            }
-        }
-      });
+    if (projectId) {
+        api.get(`/api/projects/${projectId}`)
+           .then(({ data }) => {
+                if (data.config) {
+                    setConfig({
+                        bgColor: data.config.bgColor,
+                        textColor: data.config.textColor,
+                        title: data.config.title,
+                        message: data.config.message
+                    });
+                    if (data.config.layout && Array.isArray(data.config.layout)) {
+                        setComponents(data.config.layout);
+                    }
+                }
+           })
+           .catch(console.error);
+    }
   }, [projectId]);
 
   // --- Drag & Drop Logic ---
@@ -56,7 +59,7 @@ export default function UIBuilder() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const type = e.dataTransfer.getData('type') as ComponentData['type'];
-    if (!type) return; // Might be internal move if we implemented that separately
+    if (!type) return;
 
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -91,7 +94,7 @@ export default function UIBuilder() {
   const handleCanvasDrop = (e: React.DragEvent) => {
       e.preventDefault();
       const id = e.dataTransfer.getData('componentId');
-      if (!id) return; // Fallback to sidebar drop logic
+      if (!id) return;
 
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
@@ -121,16 +124,13 @@ export default function UIBuilder() {
   const handleSave = async () => {
       setIsSaving(true);
       try {
-          await fetch(`http://localhost:3001/api/projects/${projectId}/config`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                  ...config,
-                  layout: components
-              })
+          await api.put(`/api/projects/${projectId}/config`, {
+              ...config,
+              layout: components
           });
           alert('Saved successfully!');
       } catch (err) {
+          console.error(err);
           alert('Failed to save');
       } finally {
           setIsSaving(false);
@@ -158,7 +158,7 @@ export default function UIBuilder() {
       {/* --- Left Sidebar: Components --- */}
       <div className="w-64 bg-white border-r border-gray-200 flex flex-col z-10">
         <div className="p-4 border-b border-gray-200 flex items-center gap-2">
-            <button onClick={() => router.push('/dashboard')} className="p-1 hover:bg-gray-100 rounded">
+            <button onClick={() => router.push(`/manage/${projectId}`)} className="p-1 hover:bg-gray-100 rounded">
                 <ArrowLeft size={20} />
             </button>
             <h1 className="font-bold text-gray-800">UI Builder</h1>
@@ -186,7 +186,7 @@ export default function UIBuilder() {
              <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+                className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded hover:bg-gray-800 disabled:opacity-50 transition"
              >
                  <Save size={16} />
                  {isSaving ? 'Saving...' : 'Save Design'}
@@ -204,11 +204,7 @@ export default function UIBuilder() {
                     height: CANVAS_HEIGHT,
                     backgroundColor: config.bgColor
                 }}
-                className="relative shadow-2xl transition-colors"
-                // Handle dropping moved items on the canvas itself is tricky with plain HTML5 if not handled carefully.
-                // We'll use a simple approach: The canvas handles "new drops".
-                // Moved items need their own onDrop logic or a global drop handler.
-                // Let's refine: We put onDrop on the container.
+                className="relative shadow-2xl transition-colors bg-white"
             >
                 {components.map(comp => (
                     <div
@@ -216,12 +212,10 @@ export default function UIBuilder() {
                         draggable
                         onDragStart={(e) => handleCanvasDragStart(e, comp.id)}
                         onDragEnd={(e) => {
-                             // Calculate new position relative to canvas
                              const rect = canvasRef.current?.getBoundingClientRect();
                              if (!rect) return;
                              const x = e.clientX - rect.left;
                              const y = e.clientY - rect.top;
-                             // Update
                              setComponents(prev => prev.map(c =>
                                  c.id === comp.id ? { ...c, x: x, y: y } : c
                              ));

@@ -5,6 +5,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { PrismaClient } = require('@prisma/client');
 const queueService = require('./services/queueService');
+const authRoutes = require('./routes/auth');
+const authMiddleware = require('./middleware/auth');
 
 require('dotenv').config();
 
@@ -23,29 +25,19 @@ app.use(helmet());
 app.use(express.json());
 
 // --- API Endpoints ---
+app.use('/api/auth', authRoutes);
 
 // Create a Project (Waiting Room)
-app.post('/api/projects', async (req, res) => {
+app.post('/api/projects', authMiddleware, async (req, res) => {
   try {
     const { name, ingressRate, maxActiveUsers, config } = req.body;
-    // For MVP, creating a dummy user if not auth'd, or just assume one user
-    // We'll Create a default user if none exists for simplicity
-    let user = await prisma.user.findFirst();
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
-            email: 'admin@example.com',
-            password: 'hashed_password_placeholder'
-        }
-      });
-    }
 
     const project = await prisma.project.create({
       data: {
         name,
         ingressRate: ingressRate || 10,
         maxActiveUsers: maxActiveUsers || 100,
-        userId: user.id,
+        userId: req.user.userId,
         config: {
           create: {
             title: config?.title || "You are in line",
@@ -82,9 +74,10 @@ app.get('/api/projects/:projectId', async (req, res) => {
 });
 
 // Get all projects (for dashboard)
-app.get('/api/projects', async (req, res) => {
+app.get('/api/projects', authMiddleware, async (req, res) => {
   try {
     const projects = await prisma.project.findMany({
+        where: { userId: req.user.userId },
         include: { config: true }
     });
     res.json(projects);
@@ -94,7 +87,7 @@ app.get('/api/projects', async (req, res) => {
 });
 
 // Update Project Config & Layout
-app.put('/api/projects/:projectId/config', async (req, res) => {
+app.put('/api/projects/:projectId/config', authMiddleware, async (req, res) => {
   try {
     const { projectId } = req.params;
     const { layout, bgColor, textColor, title, message } = req.body;
