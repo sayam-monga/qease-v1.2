@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import api from '@/src/utils/api';
-import { ArrowLeft, ExternalLink, Settings, Layout, Users } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Settings, Layout, Users, Code, Clock, BarChart } from 'lucide-react';
 
 export default function ManageProject() {
   const { projectId } = useParams();
@@ -17,69 +17,87 @@ export default function ManageProject() {
     }
   }, [projectId]);
 
-  if (!project) return <div className="p-8">Loading...</div>;
+  if (!project) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-8 py-4 flex items-center gap-4">
-        <Link href="/dashboard" className="p-2 hover:bg-gray-100 rounded-full">
+    <div className="min-h-screen bg-black text-white">
+      <header className="border-b border-neutral-900 px-8 py-6 flex items-center gap-4 bg-black/50 backdrop-blur-md sticky top-0 z-50">
+        <Link href="/dashboard" className="p-2 hover:bg-neutral-800 rounded-full transition text-neutral-400 hover:text-white">
             <ArrowLeft size={20} />
         </Link>
-        <h1 className="font-bold text-xl">{project.name} <span className="text-gray-400 font-normal">/ Management</span></h1>
+        <div>
+            <h1 className="font-bold text-xl">{project.name}</h1>
+            <div className="text-xs text-neutral-500 font-mono mt-0.5">{projectId}</div>
+        </div>
       </header>
 
-      <main className="max-w-5xl mx-auto p-8">
+      <main className="max-w-6xl mx-auto p-8">
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Link href={`/builder/${projectId}`} className="bg-white p-6 rounded-xl border hover:border-black transition group cursor-pointer">
-                <Layout className="mb-4 text-gray-500 group-hover:text-black" />
-                <h3 className="font-bold text-lg">Design Waiting Room</h3>
-                <p className="text-gray-500 text-sm">Customize the look and feel using the drag-and-drop builder.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <Link href={`/builder/${projectId}`} className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl hover:border-sky-500/50 transition group cursor-pointer relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-sky-500/5 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-sky-500/10"></div>
+                <Layout className="mb-4 text-sky-500" size={28} />
+                <h3 className="font-bold text-lg mb-1">Design Studio</h3>
+                <p className="text-neutral-500 text-sm">Customize appearance with the drag-and-drop builder.</p>
             </Link>
 
-            <Link href={`/waiting-room/${projectId}`} target="_blank" className="bg-white p-6 rounded-xl border hover:border-black transition group cursor-pointer">
-                <ExternalLink className="mb-4 text-gray-500 group-hover:text-black" />
-                <h3 className="font-bold text-lg">View Live Page</h3>
-                <p className="text-gray-500 text-sm">Open the actual waiting room link as a visitor would see it.</p>
+            <Link href={`/waiting-room/${projectId}`} target="_blank" className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl hover:border-emerald-500/50 transition group cursor-pointer relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-emerald-500/10"></div>
+                <ExternalLink className="mb-4 text-emerald-500" size={28} />
+                <h3 className="font-bold text-lg mb-1">Live Page</h3>
+                <p className="text-neutral-500 text-sm">View the actual waiting room as a visitor.</p>
             </Link>
 
-            <Link href={`/preview/${projectId}`} className="bg-white p-6 rounded-xl border hover:border-black transition group cursor-pointer">
-                <Users className="mb-4 text-gray-500 group-hover:text-black" />
-                <h3 className="font-bold text-lg">Preview Mode</h3>
-                <p className="text-gray-500 text-sm">Simulate the waiting experience without joining the real queue.</p>
+            <Link href={`/preview/${projectId}`} className="bg-neutral-900 border border-neutral-800 p-6 rounded-2xl hover:border-purple-500/50 transition group cursor-pointer relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-bl-full -mr-4 -mt-4 transition group-hover:bg-purple-500/10"></div>
+                <Users className="mb-4 text-purple-500" size={28} />
+                <h3 className="font-bold text-lg mb-1">Preview Mode</h3>
+                <p className="text-neutral-500 text-sm">Simulate the queue experience without joining.</p>
             </Link>
         </div>
 
-        {/* Integration Snippet */}
-        <div className="bg-white rounded-xl border p-8 mb-8">
-            <h2 className="text-xl font-bold mb-4">Integration</h2>
-            <p className="text-gray-600 mb-4">Add this script to your website's <code>&lt;head&gt;</code> to protect it with Qease.</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Analytics */}
+            <div className="lg:col-span-2 bg-neutral-900 border border-neutral-800 rounded-2xl p-8">
+                <div className="flex items-center gap-2 mb-8">
+                    <BarChart className="text-sky-500" size={20} />
+                    <h2 className="text-xl font-bold">Real-time Analytics</h2>
+                </div>
 
-            <div className="bg-gray-900 text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto relative">
-                <pre>{`<script src="http://localhost:3000/integration.js" data-project-id="${projectId}"></script>`}</pre>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
+                    <div>
+                        <div className="text-xs text-neutral-500 uppercase font-bold tracking-wider mb-2">Active Users</div>
+                        <div className="text-4xl font-bold text-white">12</div>
+                    </div>
+                    <div>
+                        <div className="text-xs text-neutral-500 uppercase font-bold tracking-wider mb-2">Waiting</div>
+                        <div className="text-4xl font-bold text-amber-500">45</div>
+                    </div>
+                    <div>
+                        <div className="text-xs text-neutral-500 uppercase font-bold tracking-wider mb-2">Avg Wait</div>
+                        <div className="text-4xl font-bold text-white">4m</div>
+                    </div>
+                    <div>
+                        <div className="text-xs text-neutral-500 uppercase font-bold tracking-wider mb-2">Throughput</div>
+                        <div className="text-4xl font-bold text-emerald-500">{project.ingressRate}</div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-        {/* Stats Placeholder */}
-        <div className="bg-white rounded-xl border p-8">
-            <h2 className="text-xl font-bold mb-4">Real-time Analytics</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                <div>
-                    <div className="text-sm text-gray-500 uppercase font-semibold">Active Users</div>
-                    <div className="text-3xl font-bold">12</div>
+            {/* Integration Snippet */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-8">
+                <div className="flex items-center gap-2 mb-4">
+                    <Code className="text-sky-500" size={20} />
+                    <h2 className="text-xl font-bold">Integration</h2>
                 </div>
-                <div>
-                    <div className="text-sm text-gray-500 uppercase font-semibold">Waiting</div>
-                    <div className="text-3xl font-bold text-orange-500">45</div>
-                </div>
-                <div>
-                    <div className="text-sm text-gray-500 uppercase font-semibold">Avg Wait</div>
-                    <div className="text-3xl font-bold">4m 20s</div>
-                </div>
-                <div>
-                    <div className="text-sm text-gray-500 uppercase font-semibold">Throughput</div>
-                    <div className="text-3xl font-bold text-green-600">{project.ingressRate}/min</div>
+                <p className="text-neutral-500 text-sm mb-6">Add this script to your website's <code>&lt;head&gt;</code> tag.</p>
+
+                <div className="bg-black border border-neutral-800 p-4 rounded-xl font-mono text-xs text-neutral-400 overflow-x-auto relative group">
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition">
+                        <button className="bg-white text-black text-[10px] font-bold px-2 py-1 rounded" onClick={() => navigator.clipboard.writeText(`<script src="http://localhost:3000/integration.js" data-project-id="${projectId}"></script>`)}>COPY</button>
+                    </div>
+                    <pre className="whitespace-pre-wrap break-all">{`<script \n  src="http://localhost:3000/integration.js" \n  data-project-id="${projectId}">\n</script>`}</pre>
                 </div>
             </div>
         </div>
