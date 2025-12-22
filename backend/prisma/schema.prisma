@@ -1,14 +1,41 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  projects  Project[]
+  createdAt DateTime  @default(now())
+}
+
+model Project {
+  id              String             @id @default(uuid())
+  name            String
+  userId          String
+  user            User               @relation(fields: [userId], references: [id])
+  maxActiveUsers  Int                @default(100)
+  ingressRate     Int                @default(10) // Users per minute
+  config          WaitingRoomConfig?
+  createdAt       DateTime           @default(now())
+}
+
+model WaitingRoomConfig {
+  id          String   @id @default(uuid())
+  projectId   String   @unique
+  project     Project  @relation(fields: [projectId], references: [id])
+  title       String   @default("You are in line")
+  message     String   @default("Thanks for your patience. We are experiencing high traffic.")
+  bgColor     String   @default("#ffffff")
+  textColor   String   @default("#000000")
+  createdAt   DateTime @default(now())
 }
