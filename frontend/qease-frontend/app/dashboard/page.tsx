@@ -1,122 +1,130 @@
-"use client";
-import { useEffect, useState } from "react";
-import api from "@/src/utils/api";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+"use client"
+import React, { useState, useEffect } from 'react';
 
-interface Room {
+// Simplified type definition based on backend
+interface Project {
   id: string;
   name: string;
-  slug: string;
-  active: boolean;
+  ingressRate: number;
+  maxActiveUsers: number;
+  config: {
+    title: string;
+    message: string;
+  }
 }
 
 export default function Dashboard() {
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
-  const router = useRouter();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [name, setName] = useState('');
+  const [ingressRate, setIngressRate] = useState(10);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) router.push("/");
-    fetchRooms();
+    fetchProjects();
   }, []);
 
-  const fetchRooms = async () => {
+  const fetchProjects = async () => {
     try {
-      const { data } = await api.get("/api/rooms");
-      setRooms(data);
-    } catch (e) {
-      console.error(e);
+      const res = await fetch('http://localhost:3001/api/projects');
+      if (res.ok) {
+        const data = await res.json();
+        setProjects(data);
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const createRoom = async () => {
-    if (!name || !slug) return;
+  const createProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
     try {
-      await api.post("/api/rooms", { name, slug });
-      setName("");
-      setSlug("");
-      fetchRooms();
-    } catch (e) {
-      alert("Error creating room");
+      const res = await fetch('http://localhost:3001/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, ingressRate: Number(ingressRate) }),
+      });
+      if (res.ok) {
+        setName('');
+        fetchProjects();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Your Waiting Rooms</h1>
-        <button
-          onClick={() => {
-            localStorage.clear();
-            router.push("/");
-          }}
-          className="text-red-500"
-        >
-          Logout
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8 text-gray-900">Virtual Waiting Room Dashboard</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow border">
-          <h3 className="font-bold mb-4">Create New Room</h3>
-          <input
-            placeholder="Event Name (e.g. Flash Sale)"
-            className="w-full border p-2 rounded mb-2"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <input
-            placeholder="URL Slug (e.g. flash-sale)"
-            className="w-full border p-2 rounded mb-4"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-          />
-          <button
-            onClick={createRoom}
-            className="bg-blue-600 text-white px-4 py-2 rounded w-full"
-          >
-            Create
-          </button>
+        {/* Create Project Card */}
+        <div className="bg-white p-6 rounded-lg shadow mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">Create New Waiting Room</h2>
+          <form onSubmit={createProject} className="flex gap-4 items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., Black Friday Sale"
+                required
+              />
+            </div>
+            <div className="w-32">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Rate (users/min)</label>
+              <input
+                type="number"
+                value={ingressRate}
+                onChange={(e) => setIngressRate(Number(e.target.value))}
+                className="w-full p-2 border border-gray-300 rounded"
+                min="1"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            >
+              {loading ? 'Creating...' : 'Create'}
+            </button>
+          </form>
         </div>
 
-        {rooms.map((room) => (
-          <div
-            key={room.id}
-            className="bg-white p-6 rounded-lg shadow border flex flex-col justify-between"
-          >
-            <div>
-              <h3 className="font-bold text-xl">{room.name}</h3>
-              <p className="text-gray-500 text-sm">/{room.slug}</p>
-              <span
-                className={`inline-block px-2 py-1 text-xs rounded mt-2 ${
-                  room.active
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
-                {room.active ? "Active" : "Inactive"}
-              </span>
+        {/* Projects List */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {projects.map((p) => (
+            <div key={p.id} className="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
+              <h3 className="text-lg font-bold text-gray-900">{p.name}</h3>
+              <p className="text-sm text-gray-500 mb-4">ID: {p.id}</p>
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Speed:</span>
+                  <span className="font-medium">{p.ingressRate} users/min</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Config:</span>
+                  <span className="font-medium truncate">{p.config?.title}</span>
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t flex justify-between items-center">
+                <a
+                  href={`/waiting-room/${p.id}`}
+                  target="_blank"
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  View Waiting Room &rarr;
+                </a>
+              </div>
             </div>
-            <div className="flex gap-2 mt-4">
-              <Link
-                href={`/builder/${room.id}`}
-                className="bg-gray-100 px-4 py-2 rounded text-sm font-medium"
-              >
-                Configure
-              </Link>
-              <Link
-                href={`/room/${room.id}`}
-                target="_blank"
-                className="bg-gray-100 px-4 py-2 rounded text-sm font-medium"
-              >
-                View Room
-              </Link>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
