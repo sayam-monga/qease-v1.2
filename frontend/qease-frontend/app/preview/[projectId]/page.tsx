@@ -25,7 +25,6 @@ export default function PreviewPage() {
 
   if (!project) return <div className="p-8">Loading Preview...</div>;
 
-  // Render Logic (Duplicate of Waiting Room but with static/mock data)
   const renderContent = () => {
     if (project.config?.layout && Array.isArray(project.config.layout) && project.config.layout.length > 0) {
         return (
@@ -41,7 +40,6 @@ export default function PreviewPage() {
                         backgroundColor: project.config.bgColor
                     }}
                 >
-                    {/* Watermark for Preview */}
                     <div className="absolute top-2 right-2 bg-black text-white text-xs px-2 py-1 rounded opacity-50 z-50">PREVIEW MODE</div>
 
                     {project.config.layout.map((comp: ComponentData) => (
@@ -84,24 +82,41 @@ export default function PreviewPage() {
 }
 
 function RenderComponent({ comp, position }: { comp: ComponentData, position: number }) {
+    const style: React.CSSProperties = {
+        width: comp.props.width,
+        height: comp.props.height,
+        backgroundColor: comp.props.backgroundColor,
+        color: comp.props.color,
+        fontSize: comp.props.fontSize,
+        fontWeight: comp.props.fontWeight,
+        textAlign: comp.props.textAlign as any,
+        borderRadius: comp.props.borderRadius,
+        boxShadow: comp.props.boxShadow,
+        padding: comp.props.padding,
+    };
+
     switch(comp.type) {
         case 'text':
-            return <div style={{ fontSize: comp.props.fontSize, color: comp.props.color }}>{comp.props.content}</div>;
+            return <div style={style}>{comp.props.content}</div>;
         case 'queue_position':
             return (
-                <div className="text-center" style={{ color: comp.props.color }}>
-                    <div style={{ fontSize: comp.props.fontSize * 0.4 }} className="opacity-70 uppercase tracking-wide text-xs mb-1">{comp.props.label || 'Position'}</div>
-                    <div style={{ fontSize: comp.props.fontSize, fontWeight: 'bold' }}>{position}</div>
+                <div style={style}>
+                    <div style={{ fontSize: (comp.props.fontSize || 48) * 0.4 }} className="opacity-70 uppercase tracking-wide mb-1">{comp.props.label}</div>
+                    <div style={{ fontWeight: 'bold' }}>{position}</div>
                 </div>
             );
         case 'wait_time':
-            return <div style={{ fontSize: comp.props.fontSize, color: comp.props.color }}>{comp.props.prefix} 15 mins</div>;
+            return <div style={style}>{comp.props.prefix} 15 mins</div>;
         case 'box':
-            return <div style={{ width: comp.props.width, height: comp.props.height, backgroundColor: comp.props.backgroundColor }}></div>;
+        case 'card':
+        case 'spacer':
+            return <div style={style}></div>;
+        case 'divider':
+            return <div style={style}></div>;
         case 'image':
-            return <img src={comp.props.src} width={comp.props.width} height={comp.props.height} className="object-cover" alt="" />;
+            return <img src={comp.props.src} style={{...style, objectFit: 'cover'}} alt="" />;
         case 'button':
-            return <button style={{ backgroundColor: comp.props.backgroundColor, color: comp.props.color, padding: '8px 16px', borderRadius: '4px' }}>{comp.props.content}</button>;
+            return <button style={style}>{comp.props.content}</button>;
         default:
             return null;
     }
