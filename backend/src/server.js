@@ -93,6 +93,39 @@ app.get('/api/projects', async (req, res) => {
   }
 });
 
+// Update Project Config & Layout
+app.put('/api/projects/:projectId/config', async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const { layout, bgColor, textColor, title, message } = req.body;
+
+    // Upsert the config
+    const config = await prisma.waitingRoomConfig.upsert({
+      where: { projectId },
+      create: {
+        projectId,
+        layout: layout || undefined,
+        bgColor,
+        textColor,
+        title,
+        message
+      },
+      update: {
+        layout: layout || undefined,
+        bgColor,
+        textColor,
+        title,
+        message
+      }
+    });
+
+    res.json(config);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update configuration' });
+  }
+});
+
 
 // Join Queue (HTTP fallback / Initial Entry)
 app.post('/api/queue/join', async (req, res) => {

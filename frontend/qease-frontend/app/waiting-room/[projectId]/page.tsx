@@ -3,6 +3,14 @@ import React, { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useParams } from 'next/navigation';
 
+interface ComponentData {
+  id: string;
+  type: string;
+  x: number;
+  y: number;
+  props: Record<string, any>;
+}
+
 export default function WaitingRoom() {
   const { projectId } = useParams();
   const [status, setStatus] = useState<'loading' | 'waiting' | 'active'>('loading');
@@ -87,6 +95,7 @@ export default function WaitingRoom() {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
+  // --- Render Active State ---
   if (status === 'active') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-green-50 text-center p-8">
@@ -99,17 +108,50 @@ export default function WaitingRoom() {
     );
   }
 
-  // Waiting State
+  // --- Render Custom Layout if available ---
+  if (project.config?.layout && Array.isArray(project.config.layout) && project.config.layout.length > 0) {
+      return (
+          <div
+              className="min-h-screen relative overflow-hidden flex items-center justify-center"
+              style={{ backgroundColor: project.config.bgColor }}
+          >
+              <div
+                  className="relative bg-white shadow-2xl"
+                  style={{
+                      width: 800,
+                      height: 450,
+                      backgroundColor: project.config.bgColor // Inherit or separate? Usually canvas is transparent or specific color. Let's assume layout is built on the bgColor page.
+                      // Actually, let's make the container responsive or fixed?
+                      // For MVP, fixed scale is easiest.
+                  }}
+              >
+                  {project.config.layout.map((comp: ComponentData) => (
+                      <div
+                          key={comp.id}
+                          style={{
+                              position: 'absolute',
+                              left: comp.x,
+                              top: comp.y,
+                          }}
+                      >
+                          <RenderComponent comp={comp} position={position} />
+                      </div>
+                  ))}
+              </div>
+          </div>
+      );
+  }
+
+
+  // --- Fallback Default View ---
   return (
     <div
         className="min-h-screen flex flex-col items-center justify-center text-center p-8"
         style={{ backgroundColor: project.config?.bgColor || '#ffffff', color: project.config?.textColor || '#000000' }}
     >
       <div className="max-w-md w-full">
-        {/* Logo/Header */}
         <h1 className="text-3xl font-bold mb-6">{project.config?.title || "You are in line"}</h1>
 
-        {/* Progress / Position */}
         <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 shadow-xl border border-black/5 mb-8">
           <div className="text-6xl font-black mb-2">{position}</div>
           <div className="text-sm opacity-75 uppercase tracking-wider font-semibold">People ahead of you</div>
@@ -129,4 +171,30 @@ export default function WaitingRoom() {
       </div>
     </div>
   );
+}
+
+function RenderComponent({ comp, position }: { comp: ComponentData, position: number | null }) {
+    switch(comp.type) {
+        case 'text':
+            return <div style={{ fontSize: comp.props.fontSize, color: comp.props.color }}>{comp.props.content}</div>;
+        case 'queue_position':
+            return (
+                <div className="text-center" style={{ color: comp.props.color }}>
+                    <div style={{ fontSize: comp.props.fontSize * 0.4 }} className="opacity-70 uppercase tracking-wide text-xs mb-1">{comp.props.label || 'Position'}</div>
+                    <div style={{ fontSize: comp.props.fontSize, fontWeight: 'bold' }}>{position !== null ? position : '-'}</div>
+                </div>
+            );
+        case 'wait_time':
+            // Simple mock calculation: Position * 2 minutes
+            const waitTime = position ? Math.ceil(position * 2) : 0;
+            return <div style={{ fontSize: comp.props.fontSize, color: comp.props.color }}>{comp.props.prefix} {waitTime} mins</div>;
+        case 'box':
+            return <div style={{ width: comp.props.width, height: comp.props.height, backgroundColor: comp.props.backgroundColor }}></div>;
+        case 'image':
+            return <img src={comp.props.src} width={comp.props.width} height={comp.props.height} className="object-cover" alt="" />;
+        case 'button':
+            return <button style={{ backgroundColor: comp.props.backgroundColor, color: comp.props.color, padding: '8px 16px', borderRadius: '4px' }}>{comp.props.content}</button>;
+        default:
+            return null;
+    }
 }
