@@ -42,8 +42,8 @@ app.post('/api/projects', authMiddleware, async (req, res) => {
           create: {
             title: config?.title || "You are in line",
             message: config?.message || "Thanks for waiting.",
-            bgColor: config?.bgColor || "#ffffff",
-            textColor: config?.textColor || "#000000"
+            bgColor: config?.bgColor || "#000000",
+            textColor: config?.textColor || "#ffffff"
           }
         }
       },
